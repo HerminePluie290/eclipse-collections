@@ -1,0 +1,9 @@
+			SUPER PLAN POUR SÉPARER UNE GOD CLASS
+			
+- ranger les méthodes de la god class dans des catégories (pas des humains donc pas de problème sociétal) (exemple: getters, setters, prédicats...)
+- créer une classe par catégorie et y déplacer toutes les méthodes de la catégorie correspondante
+- créer dans la classe d'origine un attribut par classe créée
+- transformer toutes les méthodes de la god class en des appels à la méthode correspondante de l'attribut correspondant
+- régler les potentiels soucis liés aux imports
+- vérifier que les tests marchent
+- faire péter le jus multi-fruits
