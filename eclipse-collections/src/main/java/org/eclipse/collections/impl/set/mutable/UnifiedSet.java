@@ -278,6 +278,12 @@ public class UnifiedSet<T>
         return false;
     }
 
+    /**
+     * Adds, if not already added, the given key in the ChainedBucket located at table[index].
+     * @param key The key to be added.
+     * @param index The index of the ChainedBucket that is going to contain the key
+     * @return true if the key was added to the ChainedBucket, false if the ChainedBucket already contains the key.
+     */
     private boolean chainedAdd(T key, int index)
     {
         Object realKey = UnifiedSet.toSentinelIfNull(key);
@@ -617,7 +623,6 @@ public class UnifiedSet<T>
     {
         this.add(element);
         return this;
-        //return this.modifierMethods.with(element);
     }
 
     public UnifiedSet<T> with(T element1, T element2)
@@ -796,7 +801,6 @@ public class UnifiedSet<T>
             return;
         }
         while (true);
-        //return this.modifierMethods.chainedTrimToSize(bucket, oldIndex, mask);
     }
 
     private void addForTrim(Object key, int oldIndex, int mask)
