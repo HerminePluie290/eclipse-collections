@@ -108,7 +108,6 @@ public class UnifiedSet<T>
     public UnifiedSet()
     {
         this.allocate(DEFAULT_INITIAL_CAPACITY << 1);
-        this.loadFactor = loadFactor;
         this.modifierMethods = new UnifiedSetModifierMethods<>(this);
         this.forEachMethods = new UnifiedSetForEachMethods<>(this);
         this.filterMethods = new UnifiedSetFilterMethods<>(this);
