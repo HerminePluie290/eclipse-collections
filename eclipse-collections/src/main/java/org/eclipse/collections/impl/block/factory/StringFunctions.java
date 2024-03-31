@@ -220,7 +220,7 @@ public final class StringFunctions
         @Override
         public Character valueOf(String object)
         {
-            return object == null || object.length() < 1 ? null : object.charAt(0);
+            return object == null || object.isEmpty() ? null : object.charAt(0);
         }
     }
 
