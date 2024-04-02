@@ -35,8 +35,6 @@ public class FunctionComparator<T, V>
     @Override
     public int compare(T o1, T o2)
     {
-        V attrValue1 = this.function.valueOf(o1);
-        V attrValue2 = this.function.valueOf(o2);
-        return this.comparator.compare(attrValue1, attrValue2);
+        return this.comparator.compare(this.function.valueOf(o1), this.function.valueOf(o2));
     }
 }
