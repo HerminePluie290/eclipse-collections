@@ -1917,7 +1917,7 @@ public class UnifiedSetWithHashingStrategy<T>
                     case 3:
                         if (this.three instanceof ChainedBucket)
                         {
-                            this.removeLongChain(this, i - 3);
+                            this.removeLongChain(this, 0);
                             return;
                         }
                         this.three = null;
