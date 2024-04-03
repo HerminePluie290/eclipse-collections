@@ -720,11 +720,6 @@ public class UnifiedSet<T>
     @Override
     public boolean equals(Object object)
     {
-        if (this == object)
-        {
-            return true;
-        }
-
         if (!(object instanceof Set))
         {
             return false;
