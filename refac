@@ -62,3 +62,9 @@ private void reverseTransfer(AtomicReferenceArray src, ResizeContainer resizeCon
                 }
     		processTransfer(src, dest, resizeContainer, end - 1, start, true);
 }
+
+private int changeJ(j, isReverse){
+	if (isReverse) {
+		return j--
+		}
+	return j++;}
