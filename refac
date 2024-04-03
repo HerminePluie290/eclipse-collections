@@ -1,0 +1,64 @@
+ private void processTransfer(AtomicReferenceArray src, AtomicReferenceArray dest, ResizeContainer resizeContainer, int start, int end, boolean isReverse) {
+    int j = start
+    while ((isReverse && j >= end) || (!isReverse && j < end)) {
+    	Object o = src.get(j);
+            if (o == null)
+            {
+                if (src.compareAndSet(j, null, RESIZED))
+                {
+                    j = changeJ(j, isReverse);
+                }
+            }    
+            else if (o == RESIZED || o == RESIZING) {
+		if (!isReverse){
+               		resizeContainer.zeroOutQueuePosition();
+                        return;
+                }
+                else {
+                        j = (j & ~(ResizeContainer.QUEUE_INCREMENT - 1)) + ResizeContainer.QUEUE_INCREMENT;
+                	if (resizeContainer.resizers.get() == 1)
+               		{
+                    	break;
+                    	}
+                }
+            	}
+            else
+            {
+                Entry<K, V> e = (Entry<K, V>) o;
+                if (src.compareAndSet(j, o, RESIZING))
+                {
+                    while (e != null)
+                    {
+                        this.unconditionalCopy(dest, e);
+                        e = e.getNext();
+                    }
+                    src.set(j, RESIZED);
+                    j = changeJ(j, isReverse);
+                }
+            }
+     }
+}   
+
+
+
+private void transfer(AtomicReferenceArray src, ResizeContainer resizeContainer) {
+    AtomicReferenceArray dest = resizeContainer.nextArray;
+    int end = src.length() - 1;
+    processTransfer(src, dest, resizeContainer, 0, end, false);
+    resizeContainer.decrementResizerAndNotify();
+    resizeContainer.waitForAllResizers();
+}
+
+private void reverseTransfer(AtomicReferenceArray src, ResizeContainer resizeContainer) {
+    while (resizeContainer.getQueuePosition() > 0)
+        {
+            int start = resizeContainer.subtractAndGetQueuePosition();
+            int end = start + ResizeContainer.QUEUE_INCREMENT;
+            if (end > 0)
+            {
+                if (start < 0)
+                {
+                    start = 0;
+                }
+    		processTransfer(src, dest, resizeContainer, end - 1, start, true);
+}
