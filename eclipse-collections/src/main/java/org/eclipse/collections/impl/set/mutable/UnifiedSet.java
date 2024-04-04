@@ -298,10 +298,7 @@ public class UnifiedSet<T>
                 if (bucket.one == null)
                 {
                     bucket.one = realKey;
-                    if (++this.occupied > this.maxSize)
-                    {
-                        this.rehash();
-                    }
+                    this.rehashIfNecessary();
                     return true;
                 }
                 if (this.nonNullTableObjectEquals(bucket.one, key))
@@ -311,10 +308,7 @@ public class UnifiedSet<T>
                 if (bucket.two == null)
                 {
                     bucket.two = realKey;
-                    if (++this.occupied > this.maxSize)
-                    {
-                        this.rehash();
-                    }
+                    this.rehashIfNecessary();
                     return true;
                 }
                 if (this.nonNullTableObjectEquals(bucket.two, key))
@@ -329,10 +323,7 @@ public class UnifiedSet<T>
                 if (bucket.three == null)
                 {
                     bucket.three = realKey;
-                    if (++this.occupied > this.maxSize)
-                    {
-                        this.rehash();
-                    }
+                    this.rehashIfNecessary();
                     return true;
                 }
                 if (this.nonNullTableObjectEquals(bucket.three, key))
@@ -340,21 +331,22 @@ public class UnifiedSet<T>
                     return false;
                 }
                 bucket.three = new ChainedBucket(bucket.three, realKey);
-                if (++this.occupied > this.maxSize)
-                {
-                    this.rehash();
-                }
+                this.rehashIfNecessary();
                 return true;
             }
             while (true);
         }
         ChainedBucket newBucket = new ChainedBucket(this.table[index], realKey);
         this.table[index] = newBucket;
+        this.rehashIfNecessary();
+        return true;
+    }
+
+    private void rehashIfNecessary(){
         if (++this.occupied > this.maxSize)
         {
             this.rehash();
         }
-        return true;
     }
 
     @Override
