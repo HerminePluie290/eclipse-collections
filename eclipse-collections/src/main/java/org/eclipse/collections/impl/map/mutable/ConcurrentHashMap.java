@@ -277,30 +277,35 @@ public final class ConcurrentHashMap<K, V>
             this.helpWithResize(oldTable);
         }
     }
+    private int changeJ(int j , boolean isReverse){
+        if (isReverse) {
+            return j-1;
+        }
+        return j+1;}
 
-    /*
-     * Transfer all entries from src to dest tables
-     */
-    private void transfer(AtomicReferenceArray src, ResizeContainer resizeContainer)
-    {
-        AtomicReferenceArray dest = resizeContainer.nextArray;
 
-        for (int j = 0; j < src.length() - 1; )
-        {
+    private void processTransfer(AtomicReferenceArray src, AtomicReferenceArray dest, ResizeContainer resizeContainer, int start, int end, boolean isReverse) {
+        int j = start;
+        while ((isReverse && j >= end) || (!isReverse && j < end)) {
             Object o = src.get(j);
             if (o == null)
             {
                 if (src.compareAndSet(j, null, RESIZED))
                 {
-                    j++;
+                    j = this.changeJ(j, isReverse);
                 }
             }
-            else if (o == RESIZED || o == RESIZING)
-            {
-                j = (j & ~(ResizeContainer.QUEUE_INCREMENT - 1)) + ResizeContainer.QUEUE_INCREMENT;
-                if (resizeContainer.resizers.get() == 1)
-                {
-                    break;
+            else if (o == RESIZED || o == RESIZING) {
+                if (isReverse){
+                    resizeContainer.zeroOutQueuePosition();
+                    return;
+                }
+                else {
+                    j = (j & ~(ResizeContainer.QUEUE_INCREMENT - 1)) + ResizeContainer.QUEUE_INCREMENT;
+                    if (resizeContainer.resizers.get() == 1)
+                    {
+                        break;
+                    }
                 }
             }
             else
@@ -314,16 +319,24 @@ public final class ConcurrentHashMap<K, V>
                         e = e.getNext();
                     }
                     src.set(j, RESIZED);
-                    j++;
+                    j = this.changeJ(j, isReverse);
                 }
             }
         }
+    }
+    /*
+     * Transfer all entries from src to dest tables
+     */
+    private void transfer(AtomicReferenceArray src, ResizeContainer resizeContainer) {
+        AtomicReferenceArray dest = resizeContainer.nextArray;
+        int end = src.length() - 1;
+        processTransfer(src, dest, resizeContainer, 0, end, false);
         resizeContainer.decrementResizerAndNotify();
         resizeContainer.waitForAllResizers();
     }
 
-    private void reverseTransfer(AtomicReferenceArray src, ResizeContainer resizeContainer)
-    {
+
+    private void reverseTransfer(AtomicReferenceArray src, ResizeContainer resizeContainer) {
         AtomicReferenceArray dest = resizeContainer.nextArray;
         while (resizeContainer.getQueuePosition() > 0)
         {
@@ -335,39 +348,11 @@ public final class ConcurrentHashMap<K, V>
                 {
                     start = 0;
                 }
-                for (int j = end - 1; j >= start; )
-                {
-                    Object o = src.get(j);
-                    if (o == null)
-                    {
-                        if (src.compareAndSet(j, null, RESIZED))
-                        {
-                            j--;
-                        }
-                    }
-                    else if (o == RESIZED || o == RESIZING)
-                    {
-                        resizeContainer.zeroOutQueuePosition();
-                        return;
-                    }
-                    else
-                    {
-                        Entry<K, V> e = (Entry<K, V>) o;
-                        if (src.compareAndSet(j, o, RESIZING))
-                        {
-                            while (e != null)
-                            {
-                                this.unconditionalCopy(dest, e);
-                                e = e.getNext();
-                            }
-                            src.set(j, RESIZED);
-                            j--;
-                        }
-                    }
-                }
+                processTransfer(src, dest, resizeContainer, end - 1, start, true);
+            }
             }
         }
-    }
+
 
     private void unconditionalCopy(AtomicReferenceArray dest, Entry<K, V> toCopyEntry)
     {
