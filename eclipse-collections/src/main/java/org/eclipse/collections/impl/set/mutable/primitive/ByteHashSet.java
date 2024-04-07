@@ -58,6 +58,8 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     private long bitGroup4; // 64 to 127
     private short size;
 
+    protected ByteHashStringMethods bhsetString = new ByteHashStringMethods(this);
+    protected ByteHashSetPredicates bhsetPredicate = new ByteHashSetPredicates(this);
     public ByteHashSet()
     {
     }
@@ -74,6 +76,7 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
         {
             throw new IllegalArgumentException("initial capacity cannot be less than 0");
         }
+        this.bhsetPredicate = new ByteHashSetPredicates(this);
     }
 
     public ByteHashSet(byte... elements)
@@ -89,6 +92,7 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
         this.bitGroup4 = set.bitGroup4;
         this.bitGroup1 = set.bitGroup1;
         this.bitGroup2 = set.bitGroup2;
+        this.bhsetPredicate = set.bhsetPredicate;
     }
 
     @Override
@@ -103,7 +107,6 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
         {
             return new ByteHashSet((ByteHashSet) source);
         }
-
         return ByteHashSet.newSetWith(source.toArray());
     }
 
@@ -111,6 +114,11 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     {
         return new ByteHashSet(source);
     }
+    public  long getBitGroup1() {return this.bitGroup1; }
+    public  long getBitGroup2() {return this.bitGroup2; }
+    public  long getBitGroup3() {return this.bitGroup3; }
+    public  long getBitGroup4() {return this.bitGroup4; }
+
 
     @Override
     public boolean add(byte element)
@@ -218,20 +226,7 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     @Override
     public boolean contains(byte value)
     {
-        if (value <= MAX_BYTE_GROUP_1)
-        {
-            return ((this.bitGroup1 >>> (byte) ((value + 1) * -1)) & 1L) != 0;
-        }
-        if (value <= MAX_BYTE_GROUP_2)
-        {
-            return ((this.bitGroup2 >>> (byte) ((value + 1) * -1)) & 1L) != 0;
-        }
-        if (value <= MAX_BYTE_GROUP_3)
-        {
-            return ((this.bitGroup3 >>> value) & 1L) != 0;
-        }
-
-        return ((this.bitGroup4 >>> value) & 1L) != 0;
+        return this.bhsetPredicate.contains(value);
     }
 
     @Override
@@ -244,18 +239,7 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     @Override
     public boolean equals(Object obj)
     {
-        if (this == obj)
-        {
-            return true;
-        }
-
-        if (!(obj instanceof ByteSet))
-        {
-            return false;
-        }
-
-        ByteSet other = (ByteSet) obj;
-        return this.size() == other.size() && this.containsAll(other.toArray());
+        return this.bhsetPredicate.equals(obj);
     }
 
     @Override
@@ -267,7 +251,7 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     @Override
     public String toString()
     {
-        return this.makeString("[", ", ", "]");
+        return this.bhsetString.makeString("[", ", ", "]");
     }
 
     @Override
@@ -276,6 +260,7 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
         return this.size;
     }
 
+    public void setSize(short n) {this.size = n;}
     @Override
     public boolean isEmpty()
     {
@@ -291,61 +276,37 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     @Override
     public String makeString()
     {
-        return this.makeString(", ");
+        return this.bhsetString.makeString(", ");
     }
 
     @Override
     public String makeString(String separator)
     {
-        return this.makeString("", separator, "");
+        return this.bhsetString.makeString("", separator, "");
     }
 
     @Override
     public String makeString(String start, String separator, String end)
     {
-        Appendable stringBuilder = new StringBuilder();
-        this.appendString(stringBuilder, start, separator, end);
-        return stringBuilder.toString();
+        return this.bhsetString.makeString(start, separator, end);
     }
 
     @Override
     public void appendString(Appendable appendable)
     {
-        this.appendString(appendable, ", ");
+        this.bhsetString.appendString(appendable, ", ");
     }
 
     @Override
     public void appendString(Appendable appendable, String separator)
     {
-        this.appendString(appendable, "", separator, "");
+        this.bhsetString.appendString(appendable, "", separator, "");
     }
 
     @Override
     public void appendString(Appendable appendable, String start, String separator, String end)
     {
-        try
-        {
-            appendable.append(start);
-            int count = 0;
-            ByteIterator iterator = this.byteIterator();
-
-            while (iterator.hasNext())
-            {
-                if (count > 0)
-                {
-                    appendable.append(separator);
-                }
-
-                count++;
-                appendable.append(String.valueOf(iterator.next()));
-            }
-
-            appendable.append(end);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        this.bhsetString.appendString(appendable,start, separator, end);
     }
 
     @Override
@@ -597,14 +558,7 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     @Override
     public boolean containsAll(byte... source)
     {
-        for (byte item : source)
-        {
-            if (!this.contains(item))
-            {
-                return false;
-            }
-        }
-        return true;
+        return this.bhsetPredicate.containsAll(source);
     }
 
     @Override
@@ -743,49 +697,20 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     @Override
     public boolean anySatisfy(BytePredicate predicate)
     {
-        ByteIterator iterator = this.byteIterator();
-
-        while (iterator.hasNext())
-        {
-            if (predicate.accept(iterator.next()))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return this.bhsetPredicate.anySatisfy(predicate);
     }
 
     @Override
     public boolean allSatisfy(BytePredicate predicate)
     {
-        ByteIterator iterator = this.byteIterator();
+        return this.bhsetPredicate.allSatisfy(predicate);
 
-        while (iterator.hasNext())
-        {
-            if (!predicate.accept(iterator.next()))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     @Override
     public boolean noneSatisfy(BytePredicate predicate)
     {
-        ByteIterator iterator = this.byteIterator();
-
-        while (iterator.hasNext())
-        {
-            if (predicate.accept(iterator.next()))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return this.bhsetPredicate.noneSatisfy(predicate);
     }
 
     @Override
@@ -1046,7 +971,6 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
         private final long bitGroup3; //0 to 63
         private final long bitGroup4; // 64 to 127
         private final short size;
-
         private ImmutableByteHashSet(
                 long bitGroup3,
                 long bitGroup4,
