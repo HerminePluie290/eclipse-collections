@@ -1,0 +1,13 @@
+Type de méthodes :
+
+-modifiers : add, remove, addAll,with, without,removeAll,withAll
+
+-predicats : contains , equals, anySatisfy,allSatisfy,noneSatisfy,containsAll
+
+-stringMethod : toString,les 3 makeString, les 3 appendString
+
+-asToSomething : toList, toSet, toBag, asLazy, toSortedArray, toSortedList
+
+-mathsData : sum, max, min, maxIfEmpty, minIfEmpty,average,median
+
+-forEachMethod : each, forEach,select,reject,collect,detectIfNone,count
