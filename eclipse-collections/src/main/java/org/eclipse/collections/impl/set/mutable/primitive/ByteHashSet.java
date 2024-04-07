@@ -60,6 +60,9 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
 
     protected ByteHashStringMethods bhsetString = new ByteHashStringMethods(this);
     protected ByteHashSetPredicates bhsetPredicate = new ByteHashSetPredicates(this);
+    protected ByteHashSetMathsMethods bhsetMaths = new ByteHashSetMathsMethods(this);
+
+    protected ByteHashSetForEachMethods bhsetForEach = new ByteHashSetForEachMethods(this);
     public ByteHashSet()
     {
     }
@@ -577,7 +580,7 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     @Override
     public void forEach(ByteProcedure procedure)
     {
-        this.each(procedure);
+        this.bhsetForEach.each(procedure);
     }
 
     /**
@@ -586,112 +589,36 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     @Override
     public void each(ByteProcedure procedure)
     {
-        long bitGroup1 = this.bitGroup1;
-        while (bitGroup1 != 0L)
-        {
-            byte value = (byte) Long.numberOfTrailingZeros(bitGroup1);
-            procedure.value((byte) ((value + 65) * -1));
-            bitGroup1 &= ~(1L << (byte) (value + 64));
-        }
-
-        long bitGroup2 = this.bitGroup2;
-        while (bitGroup2 != 0L)
-        {
-            byte value = (byte) Long.numberOfTrailingZeros(bitGroup2);
-            procedure.value((byte) ((value + 1) * -1));
-            bitGroup2 &= ~(1L << value);
-        }
-
-        long bitGroup3 = this.bitGroup3;
-        while (bitGroup3 != 0L)
-        {
-            byte value = (byte) Long.numberOfTrailingZeros(bitGroup3);
-            procedure.value(value);
-            bitGroup3 &= ~(1L << value);
-        }
-
-        long bitGroup4 = this.bitGroup4;
-        while (bitGroup4 != 0L)
-        {
-            byte value = (byte) Long.numberOfTrailingZeros(bitGroup4);
-            procedure.value((byte) (value + 64));
-            bitGroup4 &= ~(1L << (byte) (value + 64));
-        }
+        this.bhsetForEach.each(procedure);
     }
 
     @Override
     public ByteHashSet select(BytePredicate predicate)
     {
-        ByteHashSet result = new ByteHashSet();
-
-        this.forEach(value -> {
-            if (predicate.accept(value))
-            {
-                result.add(value);
-            }
-        });
-
-        return result;
+        return this.bhsetForEach.select(predicate);
     }
 
     @Override
     public MutableByteSet reject(BytePredicate predicate)
-    {
-        MutableByteSet result = new ByteHashSet();
-
-        this.forEach(value -> {
-            if (!predicate.accept(value))
-            {
-                result.add(value);
-            }
-        });
-
-        return result;
+    {        return this.bhsetForEach.reject(predicate);
     }
 
     @Override
     public <V> MutableSet<V> collect(ByteToObjectFunction<? extends V> function)
     {
-        MutableSet<V> target = Sets.mutable.withInitialCapacity(this.size());
-
-        this.forEach(each -> target.add(function.valueOf(each)));
-
-        return target;
+        return this.bhsetForEach.collect(function);
     }
 
     @Override
     public byte detectIfNone(BytePredicate predicate, byte ifNone)
     {
-        ByteIterator iterator = this.byteIterator();
-
-        while (iterator.hasNext())
-        {
-            byte nextByte = iterator.next();
-
-            if (predicate.accept(nextByte))
-            {
-                return nextByte;
-            }
-        }
-
-        return ifNone;
+        return this.bhsetForEach.detectIfNone(predicate,ifNone);
     }
 
     @Override
     public int count(BytePredicate predicate)
     {
-        int count = 0;
-        ByteIterator iterator = this.byteIterator();
-
-        while (iterator.hasNext())
-        {
-            if (predicate.accept(iterator.next()))
-            {
-                count++;
-            }
-        }
-
-        return count;
+        return this.bhsetForEach.count(predicate);
     }
 
     @Override
@@ -740,127 +667,42 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     @Override
     public long sum()
     {
-        long result = 0L;
-
-        ByteIterator iterator = this.byteIterator();
-
-        while (iterator.hasNext())
-        {
-            result += iterator.next();
-        }
-
-        return result;
+        return this.bhsetMaths.sum();
     }
 
     @Override
     public byte max()
     {
-        if (this.isEmpty())
-        {
-            throw new NoSuchElementException();
-        }
-        byte max = 0;
-
-        if (this.bitGroup4 != 0L)
-        {
-            //the highest has to be from this
-            max = (byte) (127 - Long.numberOfLeadingZeros(this.bitGroup4));
-        }
-        else if (this.bitGroup3 != 0L)
-        {
-            max = (byte) (63 - Long.numberOfLeadingZeros(this.bitGroup3));
-        }
-        else if (this.bitGroup2 != 0L)
-        {
-            max = (byte) ((Long.numberOfTrailingZeros(this.bitGroup2) + 1) * -1);
-        }
-        else if (this.bitGroup1 != 0L)
-        {
-            max = (byte) ((Long.numberOfTrailingZeros(this.bitGroup1) + 65) * -1);
-        }
-
-        return max;
+        return this.bhsetMaths.max();
     }
 
     @Override
     public byte maxIfEmpty(byte defaultValue)
     {
-        if (this.isEmpty())
-        {
-            return defaultValue;
-        }
-        return this.max();
+        return this.bhsetMaths.maxIfEmpty(defaultValue);
     }
 
     @Override
     public byte min()
     {
-        if (this.isEmpty())
-        {
-            throw new NoSuchElementException();
-        }
-
-        byte min = 0;
-
-        if (this.bitGroup1 != 0L)
-        {
-            //the minimum has to be from this
-            min = (byte) (128 - Long.numberOfLeadingZeros(this.bitGroup1));
-            min *= -1;
-        }
-        else if (this.bitGroup2 != 0L)
-        {
-            min = (byte) ((64 - Long.numberOfLeadingZeros(this.bitGroup2)) * -1);
-        }
-        else if (this.bitGroup3 != 0L)
-        {
-            min = (byte) Long.numberOfTrailingZeros(this.bitGroup3);
-        }
-        else if (this.bitGroup4 != 0L)
-        {
-            min = (byte) (Long.numberOfTrailingZeros(this.bitGroup4) + 64);
-        }
-
-        return min;
+        return this.bhsetMaths.min();
     }
 
     @Override
     public byte minIfEmpty(byte defaultValue)
     {
-        if (this.isEmpty())
-        {
-            return defaultValue;
-        }
-        return this.min();
+        return this.bhsetMaths.minIfEmpty(defaultValue);
     }
 
     @Override
     public double average()
     {
-        if (this.isEmpty())
-        {
-            throw new ArithmeticException();
-        }
-        return (double) this.sum() / (double) this.size();
-    }
+        return this.bhsetMaths.average();}
 
     @Override
     public double median()
     {
-        if (this.isEmpty())
-        {
-            throw new ArithmeticException();
-        }
-        byte[] sortedArray = this.toSortedArray();
-        int middleIndex = sortedArray.length >> 1;
-        if (sortedArray.length > 1 && (sortedArray.length & 1) == 0)
-        {
-            byte first = sortedArray[middleIndex];
-            byte second = sortedArray[middleIndex - 1];
-            return ((double) first + (double) second) / 2.0;
-        }
-        return (double) sortedArray[middleIndex];
-    }
+        return this.bhsetMaths.median();}
 
     @Override
     public byte[] toSortedArray()
