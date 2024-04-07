@@ -61,7 +61,7 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     protected ByteHashStringMethods bhsetString = new ByteHashStringMethods(this);
     protected ByteHashSetPredicates bhsetPredicate = new ByteHashSetPredicates(this);
     protected ByteHashSetMathsMethods bhsetMaths = new ByteHashSetMathsMethods(this);
-
+    protected ByteHashSetModifiers bhsetModifiers = new ByteHashSetModifiers(this);
     protected ByteHashSetForEachMethods bhsetForEach = new ByteHashSetForEachMethods(this);
     public ByteHashSet()
     {
@@ -122,108 +122,21 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     public  long getBitGroup3() {return this.bitGroup3; }
     public  long getBitGroup4() {return this.bitGroup4; }
 
-
+    public  void setBitGroup1(long l) {this.bitGroup1 = l; }
+    public  void setBitGroup2(long l) {this.bitGroup2 = l; }
+    public  void setBitGroup3(long l) {this.bitGroup3 = l; }
+    public  void setBitGroup4(long l) {this.bitGroup4 = l; }
     @Override
     public boolean add(byte element)
     {
-        if (element <= MAX_BYTE_GROUP_1)
-        {
-            long initial = this.bitGroup1;
+        return this.bhsetModifiers.add(element);
 
-            this.bitGroup1 |= 1L << (byte) ((element + 1) * -1);
-
-            if (this.bitGroup1 != initial)
-            {
-                this.size++;
-                return true;
-            }
-        }
-        else if (element <= MAX_BYTE_GROUP_2)
-        {
-            long initial = this.bitGroup2;
-
-            this.bitGroup2 |= 1L << (byte) ((element + 1) * -1);
-
-            if (this.bitGroup2 != initial)
-            {
-                this.size++;
-                return true;
-            }
-        }
-        else if (element <= MAX_BYTE_GROUP_3)
-        {
-            long initial = this.bitGroup3;
-
-            this.bitGroup3 |= 1L << element;
-
-            if (this.bitGroup3 != initial)
-            {
-                this.size++;
-                return true;
-            }
-        }
-        else
-        {
-            long initial = this.bitGroup4;
-
-            this.bitGroup4 |= 1L << element;
-
-            if (this.bitGroup4 != initial)
-            {
-                this.size++;
-                return true;
-            }
-        }
-
-        return false;
     }
 
     @Override
     public boolean remove(byte value)
     {
-        if (value <= MAX_BYTE_GROUP_1)
-        {
-            long initial = this.bitGroup1;
-            this.bitGroup1 &= ~(1L << (byte) ((value + 1) * -1));
-            if (this.bitGroup1 == initial)
-            {
-                return false;
-            }
-            this.size--;
-            return true;
-        }
-        if (value <= MAX_BYTE_GROUP_2)
-        {
-            long initial = this.bitGroup2;
-            this.bitGroup2 &= ~(1L << (byte) ((value + 1) * -1));
-
-            if (this.bitGroup2 == initial)
-            {
-                return false;
-            }
-            this.size--;
-            return true;
-        }
-        if (value <= MAX_BYTE_GROUP_3)
-        {
-            long initial = this.bitGroup3;
-            this.bitGroup3 &= ~(1L << value);
-            if (this.bitGroup3 == initial)
-            {
-                return false;
-            }
-            this.size--;
-            return true;
-        }
-
-        long initial = this.bitGroup4;
-        this.bitGroup4 &= ~(1L << value);
-        if (this.bitGroup4 == initial)
-        {
-            return false;
-        }
-        this.size--;
-        return true;
+        return bhsetModifiers.remove(value);
     }
 
     @Override
@@ -314,138 +227,40 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
 
     @Override
     public boolean addAll(byte... source)
-    {
-        int oldSize = this.size();
-        for (byte item : source)
-        {
-            this.add(item);
-        }
-        return this.size() != oldSize;
+    { return bhsetModifiers.addAll(source);
     }
 
     @Override
     public boolean addAll(ByteIterable source)
     {
-        if (source.isEmpty())
-        {
-            return false;
-        }
-        int oldSize = this.size();
-
-        if (source instanceof ByteHashSet)
-        {
-            ByteHashSet hashSet = (ByteHashSet) source;
-
-            this.size = 0;
-            this.bitGroup3 |= hashSet.bitGroup3;
-            this.size += Long.bitCount(this.bitGroup3);
-
-            this.bitGroup4 |= hashSet.bitGroup4;
-            this.size += Long.bitCount(this.bitGroup4);
-
-            this.bitGroup2 |= hashSet.bitGroup2;
-            this.size += Long.bitCount(this.bitGroup2);
-
-            this.bitGroup1 |= hashSet.bitGroup1;
-            this.size += Long.bitCount(this.bitGroup1);
-        }
-        else
-        {
-            ByteIterator iterator = source.byteIterator();
-            while (iterator.hasNext())
-            {
-                byte item = iterator.next();
-                this.add(item);
-            }
-        }
-        return this.size() != oldSize;
+        return bhsetModifiers.addAll(source);
     }
 
     @Override
     public boolean removeAll(ByteIterable source)
     {
-        if (source.isEmpty())
-        {
-            return false;
-        }
-        int oldSize = this.size();
-        if (source instanceof ByteHashSet)
-        {
-            this.size = 0;
-            ByteHashSet hashSet = (ByteHashSet) source;
-            this.bitGroup3 &= ~hashSet.bitGroup3;
-            this.size += Long.bitCount(this.bitGroup3);
-
-            this.bitGroup4 &= ~hashSet.bitGroup4;
-            this.size += Long.bitCount(this.bitGroup4);
-
-            this.bitGroup2 &= ~hashSet.bitGroup2;
-            this.size += Long.bitCount(this.bitGroup2);
-
-            this.bitGroup1 &= ~hashSet.bitGroup1;
-            this.size += Long.bitCount(this.bitGroup1);
-        }
-        else
-        {
-            ByteIterator iterator = source.byteIterator();
-            while (iterator.hasNext())
-            {
-                byte item = iterator.next();
-                this.remove(item);
-            }
-        }
-        return this.size() != oldSize;
+        return bhsetModifiers.removeAll(source);
     }
 
     @Override
     public boolean removeAll(byte... source)
-    {
-        if (source.length == 0)
-        {
-            return false;
-        }
-        int oldSize = this.size();
-        for (byte item : source)
-        {
-            this.remove(item);
-        }
-        return this.size() != oldSize;
+    { return bhsetModifiers.removeAll(source);
     }
 
     @Override
     public boolean retainAll(ByteIterable source)
-    {
-        int oldSize = this.size();
-        ByteSet sourceSet = source instanceof ByteSet ? (ByteSet) source : source.toSet();
-
-        ByteHashSet retained = this.select(sourceSet::contains);
-        if (retained.size() != oldSize)
-        {
-            this.bitGroup3 = retained.bitGroup3;
-            this.bitGroup4 = retained.bitGroup4;
-            this.bitGroup1 = retained.bitGroup1;
-            this.bitGroup2 = retained.bitGroup2;
-            this.size = retained.size;
-            return true;
-        }
-
-        return false;
+    { return this.bhsetModifiers.retainAll(source);
     }
 
     @Override
     public boolean retainAll(byte... source)
     {
-        return this.retainAll(ByteHashSet.newSetWith(source));
+        return this.bhsetModifiers.retainAll(ByteHashSet.newSetWith(source));
     }
 
     @Override
     public void clear()
-    {
-        this.size = 0;
-        this.bitGroup3 = 0L;
-        this.bitGroup4 = 0L;
-        this.bitGroup1 = 0L;
-        this.bitGroup2 = 0L;
+    { this.bhsetModifiers.clear();
     }
 
     @Override
@@ -567,14 +382,7 @@ public final class ByteHashSet implements MutableByteSet, Externalizable
     @Override
     public boolean containsAll(ByteIterable source)
     {
-        for (ByteIterator iterator = source.byteIterator(); iterator.hasNext(); )
-        {
-            if (!this.contains(iterator.next()))
-            {
-                return false;
-            }
-        }
-        return true;
+        return bhsetPredicate.containsAll(source);
     }
 
     @Override
